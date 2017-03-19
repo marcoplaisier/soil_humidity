@@ -11,7 +11,7 @@ serial_client = serial.Serial('/dev/ttyUSB0', baudrate=9600)
 
 
 def send_data(moisture=0, sensor='Unknown'):
-    telegraf_client.metric('soil_moisture', moisture, tags={'location': 'schuur', 'sensor': sensor})
+    telegraf_client.metric('moisture', moisture, tags={'location': 'in_home', 'sensor': sensor})
 
 
 def recv_serial():
