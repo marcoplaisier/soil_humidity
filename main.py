@@ -18,7 +18,8 @@ def recv_serial():
     while True:
         raw_data = serial_client.readline()
         print(raw_data)
-        data = json.loads(raw_data.decode('utf-8'))
+        data_string = raw_data.decode('utf-8').strip()
+        data = json.loads(data_string)
         yield data
         time.sleep(10)
 
