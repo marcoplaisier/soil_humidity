@@ -17,7 +17,7 @@ def send_data(moisture=0, sensor='Unknown'):
 def recv_serial():
     while True:
         raw_data = serial_client.readline()
-        data = json.loads(raw_data)
+        data = json.loads(raw_data.decode('utf-8'))
         yield data
         time.sleep(10)
 
