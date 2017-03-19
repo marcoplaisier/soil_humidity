@@ -11,7 +11,10 @@ serial_client = serial.Serial('/dev/ttyUSB0', baudrate=9600)
 
 
 def send_data(moisture=0, sensor='Unknown'):
-    telegraf_client.metric('moisture', moisture, tags={'location': 'in_home', 'sensor': sensor})
+    try:
+        telegraf_client.metric('moisture', moisture, tags={'location': 'in_home', 'sensor': sensor})
+    except ValueError:
+        pass  # skips one or more datapoints if they cannot be parsed. Especially when the Rasp connect to a running Arduino
 
 
 def recv_serial():
