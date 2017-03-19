@@ -20,10 +20,11 @@ def recv_serial():
         data_string = raw_data.decode('utf-8').strip()
         try:
             data = json.loads(data_string)
+            yield data
+            time.sleep(10)
         except ValueError:
+            time.sleep(1)
             pass  # skips one or more datapoints if they cannot be parsed. Especially when the Rasp connect to a running Arduino
-        yield data
-        time.sleep(10)
 
 
 if __name__ == "__main__":
