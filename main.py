@@ -1,37 +1,44 @@
 import json
-import time
 
 import serial
 from telegraf.client import TelegrafClient
 
-telegraf_client = TelegrafClient(host='146.185.169.132', port=8092)
-
-serial_client = serial.Serial('/dev/ttyUSB0', baudrate=9600)
-
-
-def send_data(value=0, type='moisture', sensor='Unknown'):
-    telegraf_client.metric(type, value, tags={'location': 'in_home', 'sensor': sensor})
+TELEGRAF_HOST = '146.185.169.132'
+TELEGRAF_PORT = 8092
+SERIAL_PORT = '/dev/ttyUSB0'
+SERIAL_BAUD_RATE = 9600
 
 
-def recv_serial():
+def convert_to_json(raw_data):
+    text_data = raw_data.decode('utf-8').strip()
+    return json.loads(text_data)
+
+
+def send_data(client, value=0, sensor_type='', sensor='unknown'):
+    client.metric(sensor_type, value, tags={'sensor': sensor})
+
+
+def recv_serial(client):
     while True:
-        raw_data = serial_client.readline()
-        data_string = raw_data.decode('utf-8').strip()
+        raw_data = client.readline()  # blocking call, due to serial.Serial(...) with timeout=None
         try:
-            data = json.loads(data_string)
-            yield data
-            time.sleep(10)
+            json_data = convert_to_json(raw_data)
+            assert json_data['value'] 
+            assert json_data['sensor_type']
+            assert json_data['sensor']
+            yield json_data
         except ValueError:
-            time.sleep(1)
-            pass  # skips one or more lines if they cannot be parsed
-            # happens when the Rasp connects to a running Arduino which has already sent data
+            pass  # when the Rasp connects to a running Arduino which has already sent data via serial, data is corrupt
+
+
+def main_loop(output_client, input_client):
+    for sensors in recv_serial(client=input_client):
+        for sensor_data in sensors:
+            send_data(client=output_client, **sensor_data)
 
 
 if __name__ == "__main__":
-    for data in recv_serial():
-        for sensor in data:
-            if sensor.startswith("luminosity"):
-                send_data(value=data[sensor], type='light', sensor='light_sensor')
-            else:
-                sensor_name = "moisture_" + sensor
-                send_data(value=data[sensor], type='moisture', sensor=sensor_name)
+    telegraf_client = TelegrafClient(host=TELEGRAF_HOST, port=TELEGRAF_PORT)
+    serial_client = serial.Serial(SERIAL_PORT, baudrate=SERIAL_BAUD_RATE, timeout=None)
+
+    main_loop(telegraf_client, serial_client)
